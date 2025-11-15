@@ -37,6 +37,9 @@ pipeline {
         
         // Node version
         NODE_VERSION = '22'
+        
+        // AWS CLI path (for macOS with Homebrew - adjust if needed)
+        PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:${env.PATH}"
     }
     
     stages {
@@ -145,12 +148,23 @@ pipeline {
                 }
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
                     sh '''
+                        # Find AWS CLI
+                        AWS_CLI=$(which aws 2>/dev/null || echo "/opt/homebrew/bin/aws")
+                        if [ ! -f "${AWS_CLI}" ]; then
+                            AWS_CLI=$(find /opt/homebrew /usr/local /usr -name aws 2>/dev/null | head -1)
+                        fi
+                        
+                        if [ -z "${AWS_CLI}" ] || [ ! -f "${AWS_CLI}" ]; then
+                            echo "ERROR: AWS CLI not found. Please install AWS CLI or update PATH in Jenkinsfile."
+                            exit 1
+                        fi
+                        
                         # Check if already bootstrapped
-                        if ! aws cloudformation describe-stacks \
+                        if ! ${AWS_CLI} cloudformation describe-stacks \
                             --stack-name CDKToolkit \
                             --region ${AWS_REGION} 2>/dev/null; then
                             echo "Bootstrapping CDK..."
-                            cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/${AWS_REGION}
+                            cdk bootstrap aws://$(${AWS_CLI} sts get-caller-identity --query Account --output text)/${AWS_REGION}
                         else
                             echo "CDK already bootstrapped"
                         fi
@@ -235,12 +249,23 @@ pipeline {
                 }
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
                     sh '''
+                        # Find AWS CLI
+                        AWS_CLI=$(which aws 2>/dev/null || echo "/opt/homebrew/bin/aws")
+                        if [ ! -f "${AWS_CLI}" ]; then
+                            AWS_CLI=$(find /opt/homebrew /usr/local /usr -name aws 2>/dev/null | head -1)
+                        fi
+                        
+                        if [ -z "${AWS_CLI}" ] || [ ! -f "${AWS_CLI}" ]; then
+                            echo "WARNING: AWS CLI not found. Skipping Lambda code update."
+                            exit 0
+                        fi
+                        
                         LAMBDA_PACKAGE=$(cat config/pr-${PR_NUMBER}/config.json | grep -o '"lambdaCodePackage": "[^"]*' | cut -d'"' -f4 || echo "")
                         LAMBDA_FUNCTION=$(cat config/pr-${PR_NUMBER}/config.json | grep -o '"lambdaFunctionName": "[^"]*' | cut -d'"' -f4 || echo "api-processor-lambda-pr-${PR_NUMBER}")
                         
                         if [ -n "${LAMBDA_PACKAGE}" ] && [ -f "${LAMBDA_PACKAGE}" ]; then
                             echo "Updating Lambda function ${LAMBDA_FUNCTION} with package ${LAMBDA_PACKAGE}"
-                            aws lambda update-function-code \
+                            ${AWS_CLI} lambda update-function-code \
                                 --function-name ${LAMBDA_FUNCTION} \
                                 --zip-file fileb://${LAMBDA_PACKAGE} \
                                 --region ${AWS_REGION}
@@ -269,10 +294,21 @@ pipeline {
                 }
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
                     sh '''
+                        # Find AWS CLI
+                        AWS_CLI=$(which aws 2>/dev/null || echo "/opt/homebrew/bin/aws")
+                        if [ ! -f "${AWS_CLI}" ]; then
+                            AWS_CLI=$(find /opt/homebrew /usr/local /usr -name aws 2>/dev/null | head -1)
+                        fi
+                        
+                        if [ -z "${AWS_CLI}" ] || [ ! -f "${AWS_CLI}" ]; then
+                            echo "ERROR: AWS CLI not found. Cannot verify deployment."
+                            exit 1
+                        fi
+                        
                         STACK_NAME="InfrastructureStack-${PR_NUMBER}"
                         
                         # Check CloudFormation stack status
-                        STACK_STATUS=$(aws cloudformation describe-stacks \
+                        STACK_STATUS=$(${AWS_CLI} cloudformation describe-stacks \
                             --stack-name ${STACK_NAME} \
                             --query 'Stacks[0].StackStatus' \
                             --output text \
@@ -284,7 +320,7 @@ pipeline {
                             echo "✅ Infrastructure deployed successfully"
                             
                             # Get stack outputs
-                            aws cloudformation describe-stacks \
+                            ${AWS_CLI} cloudformation describe-stacks \
                                 --stack-name ${STACK_NAME} \
                                 --query 'Stacks[0].Outputs' \
                                 --output table \
