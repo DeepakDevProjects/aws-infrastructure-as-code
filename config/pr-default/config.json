@@ -1,0 +1,8 @@
+{
+  "prNumber": "default",
+  "lambdaCodePackage": "lambda-function-pr-default.zip",
+  "lambdaFunctionName": "api-processor-lambda-pr-default",
+  "s3BucketName": "api-responses-bucket-pr-default",
+  "stackName": "InfrastructureStack-default",
+  "createdAt": "2025-11-15T18:36:46Z"
+}
