@@ -24,9 +24,14 @@
 pipeline {
     agent any
     
+    // Allow this pipeline to be triggered by other pipelines
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+    
     // Environment variables
     environment {
-        // Get PR number from params, environment, or default to scanning configs
+        // Get PR number from params (set by Lambda app pipeline), environment, or default
         PR_NUMBER = "${params.PR_NUMBER ?: env.PR_NUMBER ?: 'default'}"
         
         // AWS credentials (set in Jenkins Credentials Store)

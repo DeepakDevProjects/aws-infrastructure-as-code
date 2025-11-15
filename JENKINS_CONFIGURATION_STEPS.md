@@ -294,7 +294,78 @@ Follow these steps in order to configure Jenkins for your CI/CD pipelines.
 
 ---
 
-## Step 12: Set Up GitHub Webhooks (Optional - For Automatic Triggers)
+## Step 12: Set Up Automatic Pipeline Triggering
+
+This is the key step to make everything automatic:
+
+### 12a: Configure Infrastructure Pipeline Parameter
+
+1. Go to Jenkins Dashboard
+2. Click **infrastructure-pipeline**
+3. Click **Configure**
+4. Check **This project is parameterized**
+5. Click **Add Parameter** → **String Parameter**
+6. Configure:
+   - **Name**: `PR_NUMBER` (must be exactly this)
+   - **Default Value**: `default`
+   - **Description**: `PR Number for deployment (e.g., 123)`
+7. Click **Save**
+
+### 12b: Configure Lambda App Pipeline to Trigger on PRs
+
+1. Go to Jenkins Dashboard
+2. Click **lambda-app-pipeline**
+3. Click **Configure**
+4. Scroll to **Build Triggers** section
+5. Check **GitHub hook trigger for GITScm polling**
+   - This allows the pipeline to be triggered by GitHub webhooks
+6. Click **Save**
+
+### 12c: Set Up GitHub Webhook (For Local Jenkins - Use ngrok)
+
+**IMPORTANT:** Since Jenkins is running on localhost, you need ngrok to expose it to GitHub.
+
+#### Install ngrok:
+```bash
+brew install ngrok
+```
+
+#### Start ngrok:
+```bash
+ngrok http 8080
+```
+
+Copy the HTTPS URL (e.g., `https://abc123.ngrok.io`)
+
+#### Configure GitHub Webhook:
+
+1. Go to your Lambda app repository on GitHub:
+   - `https://github.com/DeepakDevProjects/aws-serverless-lambda-app`
+2. Click **Settings** → **Webhooks** → **Add webhook**
+3. Configure:
+   - **Payload URL**: `https://YOUR_NGROK_URL.ngrok.io/github-webhook/`
+     - Example: `https://abc123.ngrok.io/github-webhook/`
+   - **Content type**: `application/json`
+   - **Events**: Select **Let me select individual events**
+     - ✅ Check **Pull requests**
+   - ✅ **Active**
+4. Click **Add webhook**
+
+**Note:** Each time you restart ngrok, you'll get a new URL. For testing, you can also manually trigger the pipeline.
+
+### 12d: How Automatic Triggering Works
+
+1. **You create PR in Lambda app repo** → GitHub sends webhook
+2. **Jenkins receives webhook** → Triggers `lambda-app-pipeline`
+3. **Lambda app pipeline runs** → Stage 7 automatically triggers `infrastructure-pipeline`
+4. **Infrastructure pipeline deploys** → Creates AWS resources
+5. **Lambda app pipeline continues** → Deploys Lambda function code
+
+See **GITHUB_WEBHOOK_SETUP.md** for detailed instructions.
+
+---
+
+## Step 13: Set Up GitHub Webhooks (Alternative - Without ngrok)
 
 ### Configure Jenkins to Accept Webhooks:
 
