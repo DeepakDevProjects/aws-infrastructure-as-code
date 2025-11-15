@@ -1,0 +1,32 @@
+{
+  "name": "aws-infrastructure-as-code",
+  "version": "1.0.0",
+  "description": "AWS Infrastructure as Code for Lambda function",
+  "main": "bin/app.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "deploy": "cdk deploy",
+    "synth": "cdk synth",
+    "diff": "cdk diff"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "infrastructure",
+    "lambda",
+    "s3"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~5.3.3",
+    "aws-cdk": "^2.100.0"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+*.js
+*.d.ts
+*.js.map
+*.log
+.env
+.DS_Store
+cdk.out/
+cdk.context.json
+!bin/app.js
+!lib/*.js
+
