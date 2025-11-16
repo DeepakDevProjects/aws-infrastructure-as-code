@@ -169,7 +169,7 @@ pipeline {
                             --stack-name CDKToolkit \
                             --region ${AWS_REGION} 2>/dev/null; then
                             echo "Bootstrapping CDK..."
-                            cdk bootstrap aws://$(${AWS_CLI} sts get-caller-identity --query Account --output text)/${AWS_REGION}
+                            npx cdk bootstrap aws://$(${AWS_CLI} sts get-caller-identity --query Account --output text)/${AWS_REGION}
                         else
                             echo "CDK already bootstrapped"
                         fi
@@ -192,7 +192,7 @@ pipeline {
                     echo "============================================"
                 }
                 sh '''
-                    cdk synth --context prNumber=${PR_NUMBER} > synth-output.yaml || {
+                    npx cdk synth --context prNumber=${PR_NUMBER} > synth-output.yaml || {
                         echo "CDK synthesis failed"
                         exit 1
                     }
@@ -217,7 +217,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
                     sh '''
                         # Deploy CDK stack with PR number context
-                        cdk deploy InfrastructureStack-${PR_NUMBER} \
+                        npx cdk deploy InfrastructureStack-${PR_NUMBER} \
                             --context prNumber=${PR_NUMBER} \
                             --require-approval never \
                             --outputs-file stack-outputs.json
