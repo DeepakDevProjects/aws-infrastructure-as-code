@@ -146,11 +146,11 @@ Follow these steps in order to configure Jenkins for your CI/CD pipelines.
    
    - **Branches to build**: 
      - You'll see a field with "Branch Specifier" or "Branches to build"
-     - Click **Add** button (to add a branch pattern)
-     - Enter: `*/main` (this builds from main branch)
-     - **OR** if you want to build from any branch, enter: `*`
-     - **IMPORTANT:** You only need ONE branch entry for now
-     - If you see multiple "Add" buttons, just click once and enter `*/main`
+     - Click **Add** and enter: `**` (two asterisks - matches all branches)
+     - This allows the job to work with ANY branch name (e.g., `feature/pr-212`, `bugfix-123`, `hotfix-456`, `my-branch`, etc.)
+     - Remove any existing `*/main` entry if present
+     - ✅ **Uncheck** **Lightweight checkout** so Jenkins fetches the exact branch that triggered the webhook
+     - **Note:** The pipeline will automatically extract PR numbers from branch names using multiple patterns, or create a unique identifier if no number is found
    
    - **Repository browser**: 
      - Select **Auto** (default option)
@@ -168,6 +168,21 @@ Follow these steps in order to configure Jenkins for your CI/CD pipelines.
        - **Local subdirectory for repo**: `lambda-app` (optional)
    
 5. Click **Save**
+
+### ✅ Quick Branch Verification
+
+1. Push a test commit to ANY branch (e.g., `feature/pr-123`, `bugfix-456`, `my-custom-branch`, etc.).
+2. Trigger the `lambda-app-pipeline` (push or manual **Build Now**).
+3. Open the build **Console Output** and confirm you see:
+   - `Detected branch: <your-branch-name>`
+   - `Final PR Number: <extracted-number-or-identifier>`
+4. The pipeline supports any branch name and will:
+   - Extract PR numbers from patterns like: `pr-123`, `PR-456`, `bugfix-789`, `issue-123`, etc.
+   - Create a unique identifier if no number is found (using branch name + commit hash)
+5. If it still shows `main` or `HEAD`, re-check that:
+   - The Branch Specifier is `**` (matches all branches)
+   - **Lightweight checkout** is unchecked
+   - The GitHub webhook event referenced the correct branch
 
 ---
 
