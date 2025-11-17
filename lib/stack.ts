@@ -86,9 +86,10 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Lambda Function - ⚠️ PLACEHOLDER CODE: Will be replaced with actual code from lambda-app repo
     // In production, use code.fromAsset('path/to/lambda-code.zip') instead of fromInline
+    // Handler path: src/index.handler (because Lambda code is in src/index.js)
     this.lambdaFunction = new lambda.Function(this, `ApiProcessorLambda-${prNumber}`, {
       runtime: lambda.Runtime.NODEJS_22_X,
-      handler: 'index.handler',
+      handler: 'src/index.handler',
       functionName: `api-processor-lambda-pr-${prNumber}`,
       role: lambdaRole,
       code: lambda.Code.fromInline(`
