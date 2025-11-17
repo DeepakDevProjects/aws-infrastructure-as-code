@@ -27,6 +27,8 @@ The infrastructure pipeline must accept PR_NUMBER as a parameter:
 
 ## Step 2: Configure Lambda App Pipeline for GitHub Triggers
 
+### Option A: Standard GitHub Hook (Current Setup)
+
 1. Go to Jenkins Dashboard
 2. Click **lambda-app-pipeline**
 3. Click **Configure**
@@ -34,6 +36,68 @@ The infrastructure pipeline must accept PR_NUMBER as a parameter:
 5. Check **GitHub hook trigger for GITScm polling**
    - This allows GitHub webhooks to trigger the pipeline
 6. Click **Save**
+
+**Note:** This setup works, but PR number detection relies on:
+- Webhook environment variables (CHANGE_ID - may not always be set)
+- GitHub API call (fallback)
+- Branch name extraction (fallback)
+
+### Option B: GitHub Pull Request Builder Plugin (Recommended - Always Gets PR Number)
+
+This plugin **always** sets `ghprbPullId` environment variable with the PR number when a PR webhook is received.
+
+#### 2b.1: Install GitHub Pull Request Builder Plugin
+
+1. Go to **Manage Jenkins** → **Manage Plugins**
+2. Click **Available** tab
+3. Search for: `GitHub Pull Request Builder`
+4. Check the box and click **Install without restart** (or **Download now and install after restart**)
+5. Wait for installation to complete
+6. Restart Jenkins if needed
+
+#### 2b.2: Configure Lambda App Pipeline with PR Builder
+
+1. Go to Jenkins Dashboard
+2. Click **lambda-app-pipeline**
+3. Click **Configure**
+4. Scroll to **Build Triggers** section
+5. Check **GitHub Pull Request Builder**
+6. Configure:
+   - **GitHub API URL**: `https://api.github.com` (default)
+   - **Credentials**: Select your GitHub token credential (e.g., `github-token`)
+   - **Admin list**: Add your GitHub username (e.g., `DeepakDevProjects`)
+   - **Trigger phrase**: (leave empty to trigger on all PRs)
+   - **Allow members of whitelisted organizations**: (optional)
+   - **Build every pull request**: ✅ Check this
+   - **Skip build if only doc files changed**: (optional)
+7. Also check **GitHub hook trigger for GITScm polling** (for push events)
+8. Click **Save**
+
+#### 2b.3: Update GitHub Webhook URL
+
+When using GitHub Pull Request Builder, the webhook URL is different:
+
+1. Go to your GitHub repository → **Settings** → **Webhooks**
+2. Edit your existing webhook (or create new)
+3. Change **Payload URL** to: `https://YOUR_NGROK_URL.ngrok.io/ghprbhook/`
+   - **Note:** Use `/ghprbhook/` instead of `/github-webhook/`
+4. **Events**: Select **Pull requests** (required for PR Builder)
+5. Click **Update webhook**
+
+**Result:** When a PR is created/updated, the plugin automatically sets `ghprbPullId` environment variable with the PR number, which your Jenkinsfile already checks for!
+
+### Comparison: Option A vs Option B
+
+| Feature | Option A (Standard Hook) | Option B (PR Builder Plugin) |
+|---------|-------------------------|----------------------------|
+| **PR Number Detection** | Relies on fallbacks (API call, branch name) | ✅ Always sets `ghprbPullId` |
+| **Webhook URL** | `/github-webhook/` | `/ghprbhook/` |
+| **Setup Complexity** | Simple | Requires plugin installation |
+| **Reliability** | Good (with fallbacks) | ✅ Excellent (always works) |
+| **Works with Push Events** | ✅ Yes | ✅ Yes (if also enabled) |
+| **Works with PR Events** | ⚠️ May need API call | ✅ Yes (native support) |
+
+**Recommendation:** Use **Option B (GitHub Pull Request Builder)** if you want guaranteed PR number detection without relying on API calls or branch name parsing.
 
 ---
 
