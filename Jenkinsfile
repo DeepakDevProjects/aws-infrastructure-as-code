@@ -228,6 +228,34 @@ pipeline {
                         if [ -f "stack-outputs.json" ]; then
                             echo "Stack Outputs:"
                             cat stack-outputs.json
+                            
+                            # Update config file with actual S3 bucket name from stack outputs
+                            if [ -f "config/pr-${PR_NUMBER}/config.json" ]; then
+                                ACTUAL_S3_BUCKET=$(cat stack-outputs.json | grep -o '"S3BucketName": "[^"]*' | cut -d'"' -f4 || echo "")
+                                if [ -n "${ACTUAL_S3_BUCKET}" ]; then
+                                    echo "Updating config file with actual S3 bucket name: ${ACTUAL_S3_BUCKET}"
+                                    # Use Python or jq to update JSON, or use sed for simple replacement
+                                    # For simplicity, we'll use a Python one-liner if available, otherwise sed
+                                    if command -v python3 >/dev/null 2>&1; then
+                                        python3 <<EOF
+import json
+import sys
+
+config_file = "config/pr-${PR_NUMBER}/config.json"
+with open(config_file, 'r') as f:
+    config = json.load(f)
+
+config["s3BucketName"] = "${ACTUAL_S3_BUCKET}"
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=2)
+EOF
+                                        echo "Config file updated with actual S3 bucket name"
+                                    else
+                                        echo "Python3 not available, skipping config update (Lambda app pipeline will use bucket from stack outputs)"
+                                    fi
+                                fi
+                            fi
                         fi
                     '''
                 }
