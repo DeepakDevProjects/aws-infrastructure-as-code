@@ -4,5 +4,5 @@
   "lambdaFunctionName": "api-processor-lambda-pr-default",
   "s3BucketName": "api-responses-bucket-pr-default",
   "stackName": "InfrastructureStack-default",
-  "createdAt": "2025-11-17T18:07:18Z"
+  "createdAt": "2025-11-18T11:52:23Z"
 }
